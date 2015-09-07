@@ -73,6 +73,12 @@ class RegexNfa {
                     newFragment.addLeaves(right.leaves);
                     break;
                 }
+                case '.': {
+                    final State s = new CharState(++stateId, CharacterClasses.anyCharMatcher());
+                    newFragment = new Fragment(s);
+                    newFragment.addLeaf(s);
+                    break;
+                }
                 default: {
                     final State s = new CharState(++stateId, CharacterClasses.exactMatchOf(c));
                     newFragment = new Fragment(s);

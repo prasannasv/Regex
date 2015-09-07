@@ -96,6 +96,9 @@ public class ParserTest {
                 {"a|b*c?", "bbbbc", "true"},
                 {"a(bb)+a", "abbbba", "true"},
                 {"a(bb)+a", "abbba", "false"},
+                {".*", "aaaaaaa", "true"},
+                {".", "g", "true"},
+                {"a*...", "amen", "true"},
         };
 
         for (final String[] testCase : testCases) {
