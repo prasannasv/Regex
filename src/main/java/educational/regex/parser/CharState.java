@@ -1,23 +1,25 @@
 package educational.regex.parser;
 
+import educational.regex.characterclasses.CharacterClass;
+
 /**
  * Created by prasanna.venkatasubramanian on 9/2/15.
  */
 class CharState extends State {
-    final char label;
+    private final CharacterClass acceptableSet;
 
-    CharState(final int id, final char label) {
+    CharState(final int id, final CharacterClass acceptableSet) {
         super(id);
-        this.label = label;
+        this.acceptableSet = acceptableSet;
     }
 
     @Override
     public boolean matches(final char c) {
-        return c == label;
+        return acceptableSet.isAccepted(c);
     }
 
     @Override
     public String toString() {
-        return id + ":" + label;
+        return id + ":" + acceptableSet.toString();
     }
 }

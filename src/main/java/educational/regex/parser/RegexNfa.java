@@ -1,6 +1,8 @@
 package educational.regex.parser;
 
 import educational.regex.ParseException;
+import educational.regex.UnexpectedEscapeChar;
+import educational.regex.characterclasses.CharacterClasses;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -53,8 +55,16 @@ class RegexNfa {
                     newFragment.addLeaves(right.leaves);
                     break;
                 }
-                case '\\':
+                case '\\': {
+                    if (i + 1 == postfix.length) {
+                        throw new UnexpectedEscapeChar();
+                    }
+                    final char lookAhead = postfix[++i];
+                    final State s = new CharState(++stateId, CharacterClasses.exactMatchOf(lookAhead));
+                    newFragment = new Fragment(s);
+                    newFragment.addLeaf(s);
                     break;
+                }
                 case '#': {
                     final Fragment right = fragmentStack.pop();
                     final Fragment left = fragmentStack.pop();
@@ -64,7 +74,7 @@ class RegexNfa {
                     break;
                 }
                 default: {
-                    final State s = new CharState(++stateId, c);
+                    final State s = new CharState(++stateId, CharacterClasses.exactMatchOf(c));
                     newFragment = new Fragment(s);
                     newFragment.addLeaf(s);
                     break;

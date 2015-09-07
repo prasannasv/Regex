@@ -32,6 +32,7 @@ public class ParserTest {
                 put("ab(cd)", "a#b#(c#d)");
                 put("ab(c#d)", "a#b#(c#\\##d)");
                 put("a(bb)+a", "a#(b#b)+#a");
+                put("a\\?\\*", "a#\\?#\\*");
                 put("a???", "a???");
                 put("a?b|c+d*(ef+)?", "a?#b|c+#d*#(e#f+)?");
                 put("a\\?b|c+d*(ef+)?", "a#\\?#b|c+#d*#(e#f+)?");
@@ -55,6 +56,7 @@ public class ParserTest {
                 put("ab(c#d)", "ab#c\\##d##");
                 put("ab#", "ab#\\##");
                 put("a???", "a???");
+                put("a\\?\\*", "a\\?#\\*#");
                 put("a?b|c+d*(ef+)?", "a?b#c+d*#ef+#?#|");
                 put("a\\?b|c+d*(ef+)?", "a\\?#b#c+d*#ef+#?#|");
             }
@@ -89,6 +91,7 @@ public class ParserTest {
                 {"a*", "aaaaaaa", "true"},
                 {"ab", "abc", "false"},
                 {"ab*", "a", "true"},
+                {"a\\*\\?", "a*?", "true"},
                 {"ab*c?", "abbbbb", "true"},
                 {"a|b*c?", "bbbbc", "true"},
                 {"a(bb)+a", "abbbba", "true"},
@@ -100,8 +103,9 @@ public class ParserTest {
             final String input = testCase[1];
             final boolean expectedMatches = Boolean.parseBoolean(testCase[2]);
 
+            log.info("Matching input: " + input + " on pattern: " + pattern);
             final Matcher matcher = Parser.compile(pattern);
-            log.info("Matching input: " + input + " on pattern: " + pattern + " ~> " + matcher);
+            log.info("Compiled " + pattern + " ~> " + matcher);
             final boolean actualMatches = matcher.matches(input);
             assertEquals("pattern: " + pattern + ", input: " + input, expectedMatches, actualMatches);
         }

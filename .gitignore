@@ -2,3 +2,4 @@
 .idea/
 Regex.iml
 gradle/
+build/

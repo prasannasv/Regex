@@ -6,16 +6,26 @@ import educational.regex.UnexpectedEscapeChar;
 import educational.regex.UnmatchedClosingBrace;
 
 import java.util.Stack;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Created by prasanna.venkatasubramanian on 9/2/15.
  */
 public class Parser {
+    private static final Logger log = Logger.getLogger(Parser.class.getName());
+
+    static {
+        log.setLevel(Level.OFF);
+    }
+
     public static Matcher compile(final String regex) throws ParseException {
         if (regex == null || regex.trim().isEmpty()) {
             throw new EmptyRegexException();
         }
+        log.info("infix: " + regex);
         final char[] postfix = infixToPostfix(regex);
+        log.info("postfix: " + new String(postfix));
         final RegexNfa.Fragment parsedExpression = RegexNfa.postfixToNfa(postfix);
         return new Matcher(parsedExpression.getStart());
     }
@@ -94,7 +104,7 @@ public class Parser {
                 ++i;
             }
 
-            if (curr != '|' && curr != '(' && (!shouldSkipConcatOper(lookAhead) || curr == '\\')) {
+            if (curr != '|' && curr != '(' && i < pattern.length - 1 && (!shouldSkipConcatOper(lookAhead) || curr == '\\')) {
                 sb.append('#');
             }
         }
