@@ -32,10 +32,26 @@ public class ParserTest {
                 put("ab(cd)", "a#b#(c#d)");
                 put("ab(c#d)", "a#b#(c#\\##d)");
                 put("a(bb)+a", "a#(b#b)+#a");
+                put("a(\\*)", "a#(\\*)");
                 put("a\\?\\*", "a#\\?#\\*");
                 put("a???", "a???");
                 put("a?b|c+d*(ef+)?", "a?#b|c+#d*#(e#f+)?");
                 put("a\\?b|c+d*(ef+)?", "a#\\?#b|c+#d*#(e#f+)?");
+                put("abc", "a#b#c");
+                put("a+bc", "a+#b#c");
+                put("a|b", "a|b");
+                put("a(b)c", "a#(b)#c");
+                put("a[b]c", "a#[b]#c");
+                put("a[a-z]d", "a#[a-z]#d");
+                put("[a-zA-Z0-9]", "[a-z#A-Z#0-9]");
+                put("[^a-z]", "[^a-z]");
+                //TODO: put("[-0-9]", "[-#0-9]");
+                //TODO: put("[0-9-]", "[0-9#-]");
+                put("[0-9\\-]", "[0-9#\\-]");
+                put("[0-9[a-z]]", "[0-9#[a-z]]");
+                put("[0-9\\]]", "[0-9#\\]]");
+                put("a#b", "a#\\##b");
+                put("a\\*b", "a#\\*#b");
             }
         };
         for (final Map.Entry<String, String> testCase : testCases.entrySet()) {
@@ -59,6 +75,16 @@ public class ParserTest {
                 put("a\\?\\*", "a\\?#\\*#");
                 put("a?b|c+d*(ef+)?", "a?b#c+d*#ef+#?#|");
                 put("a\\?b|c+d*(ef+)?", "a\\?#b#c+d*#ef+#?#|");
+                // With character classes
+                put("a.b", "a.#b#");
+                put("a[a-z]d", "a[az-]#d#");
+                put("[a-zA-Z0-9]", "[az-AZ-#09-#]");
+                put("[^a-z]", "[az-^]");
+                //TODO: put("[-0-9]", "[-09-#]");
+                //TODO: put("[0-9-]", "[09--#]");
+                put("[0-9\\-]", "[09-\\-#]");
+                put("[0-9[a-z]]", "[09-[az-]#]");
+                put("[0-9\\]]", "[09-\\]#]");
             }
         };
         for (final Map.Entry<String, String> testCase : testCases.entrySet()) {

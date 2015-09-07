@@ -45,7 +45,7 @@ public class Parser {
             }
 
             switch (current) {
-                // unary operators, add them right away
+                // Unary postfix operators are already in postfix notation. Just add them right away.
                 case '+':
                 case '?':
                 case '*':
@@ -56,23 +56,26 @@ public class Parser {
                     operatorStack.push(current);
                     break;
                 case ')':
-                    while (true) {
-                        if (operatorStack.empty()) {
-                            throw new UnmatchedClosingBrace();
-                        }
-                        final char oper = operatorStack.pop();
-                        if (oper == '(') {
-                            break;
-                        }
-                        postfixBuilder.append(oper);
-                    }
+                    appendUntil('(', operatorStack, postfixBuilder);
+                    break;
+                case '[':
+                    postfixBuilder.append(current);
+                    operatorStack.push(current);
+                    break;
+                case ']':
+                    appendUntil('[', operatorStack, postfixBuilder);
+                    postfixBuilder.append(current);
                     break;
                 case '\\':
                     postfixBuilder.append(current);
                     isEscaped = true;
                     break;
                 default:
-                    popConcatOperIfPresent(postfixBuilder, operatorStack);
+                    final int precedence = precedence(current);
+                    // the = check below makes operators left associative
+                    while (!operatorStack.empty() && precedence(operatorStack.peek()) >= precedence) {
+                        postfixBuilder.append(operatorStack.pop());
+                    }
                     operatorStack.push(current);
                     break;
             }
@@ -84,27 +87,89 @@ public class Parser {
         return postfixBuilder.toString().toCharArray();
     }
 
+    /**
+     * Lower value implies lower precedence.
+     */
+    private static int precedence(final char oper) {
+        switch (oper) {
+            case '(':
+                return 1;
+            case '[':
+                return 2;
+            case '|':
+                return 3;
+            case '#':
+                return 4;
+            case '^':
+                return 5;
+            case '-':
+                return 6;
+        }
+        throw new IllegalStateException("Precedence for operator " + oper + " not specified!");
+    }
+
+    private static void appendUntil(final char terminal,
+                                    final Stack<Character> operatorStack,
+                                    final StringBuilder postfixBuilder)
+            throws UnmatchedClosingBrace {
+
+        while (true) {
+            if (operatorStack.empty()) {
+                throw new UnmatchedClosingBrace();
+            }
+            final char oper = operatorStack.pop();
+            if (oper == terminal) {
+                //discard the terminal after popping
+                break;
+            }
+            postfixBuilder.append(oper);
+        }
+    }
+
+    /**
+     * This inserts our internal concat operator (#) between tokens.
+     * abc -> a#b#c (normal characters are each tokens by default)
+     * a+bc -> a+#b#c (normal character followed by a special char like +, ? or * is considered as a single token)
+     * a|b -> a|b (| terminates a sequence)
+     * a(b)c -> a#(b)#c ('(' and ')' have no meaning separately.)
+     * a[b]c -> a#[b]#c (so are '[' and ']')
+     * a[a-z]d -> a#[a-z]#d (a-z is a single token)
+     * [a-zA-Z0-9] -> [a-z#A-Z#0-9]
+     * [^a-z] -> [^a-z]
+     * TODO: [-0-9] -> [-#0-9]
+     * [0-9\-] -> [0-9#\-]
+     * [0-9[a-z]] -> [0-9#[a-z]]
+     * [0-9\]] -> [0-9#\]]
+     * a#b -> a#\##b (all # in the input should just be escaped)
+     * a\*b -> a#\*#b (all escaped meta-characters should be treated as a separate token)
+     */
     /* package */ static char[] insertConcatOperator(final char[] pattern) throws UnexpectedEscapeChar {
         final StringBuilder sb = new StringBuilder();
 
         for (int i = 0; i < pattern.length; ++i) {
-            final char curr = pattern[i];
+            char curr = pattern[i];
             if (curr == '#') {
                 sb.append('\\');
             }
 
             sb.append(curr);
 
-            final char lookAhead = (i < pattern.length - 1) ? pattern[i + 1] : '\0';
+            char lookAhead = lookAhead(pattern, i);
             if (curr == '\\') {
                 if (lookAhead == '#' || !isMetaCharacter(lookAhead)) {
                     throw new UnexpectedEscapeChar();
                 }
                 sb.append(lookAhead);
                 ++i;
+                curr = lookAhead;
+                lookAhead = lookAhead(pattern, i);
             }
 
-            if (curr != '|' && curr != '(' && i < pattern.length - 1 && (!shouldSkipConcatOper(lookAhead) || curr == '\\')) {
+            if (i < pattern.length - 1 &&
+                    !isSequenceBeginner(curr) &&
+                    !isUnaryPrefixOperator(curr) &&
+                    !isBinaryOperator(curr) &&
+                    (!shouldSkipConcatOper(lookAhead) || curr == '\\')) {
                 sb.append('#');
             }
         }
@@ -112,12 +177,44 @@ public class Parser {
         return sb.toString().toCharArray();
     }
 
+    private static char lookAhead(final char[] pattern, final int i) {
+        return (i < pattern.length - 1) ? pattern[i + 1] : '\0';
+    }
+
+    private static boolean isUnaryOperator(final char c) {
+        return isUnaryPostfixOperator(c) || isUnaryPrefixOperator(c);
+    }
+
+    private static boolean isUnaryPostfixOperator(final char c) {
+        return c == '+' || c == '?' || c == '*';
+    }
+
+    private static boolean isUnaryPrefixOperator(final char c) {
+        return c == '^';
+    }
+
+    private static boolean isBinaryOperator(final char c) {
+        return c == '|' || c == '-';  // '#' is an "internal" binary operator.
+    }
+
+    private static boolean isSequenceBeginner(final char c) {
+        return c == '(' || c == '[' || c == '|';
+    }
+
+    private static boolean isSequenceTerminator(final char c) {
+        return c == ')' || c == ']' || c == '|';
+    }
+
+    private static boolean isSequenceDelimiter(final char c) {
+        return isSequenceTerminator(c) || isSequenceBeginner(c);
+    }
+
     private static boolean shouldSkipConcatOper(final char c) {
-        return c == ')' || c == '|' || c == '*' || c == '?' || c =='+' || c == '\0';
+        return isSequenceTerminator(c) || isUnaryPostfixOperator(c) || isBinaryOperator(c);
     }
 
     private static boolean isMetaCharacter(final char c) {
-        return c == '?' || c == '+' || c == '*' || c == '(' || c == ')' || c == '\\' || c == '#' || c == '|';
+        return isUnaryOperator(c) || isSequenceDelimiter(c) || isBinaryOperator(c) || c == '\\' || c == '#';
     }
 
     private static void popConcatOperIfPresent(final StringBuilder postfixBuilder,
