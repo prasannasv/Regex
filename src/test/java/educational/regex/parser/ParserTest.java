@@ -122,9 +122,14 @@ public class ParserTest {
                 {"a|b*c?", "bbbbc", "true"},
                 {"a(bb)+a", "abbbba", "true"},
                 {"a(bb)+a", "abbba", "false"},
+                //Character Classes
                 {".*", "aaaaaaa", "true"},
                 {".", "g", "true"},
                 {"a*...", "amen", "true"},
+                {"[a-z]", "x", "true"},
+                {"a[a-z]d", "and", "true"},
+                {"[a-zA-Z0-9]+", "ClassName007", "true"},
+                {"[^a-zA-Z0-9]+", "#$!!_+=", "true"},
         };
 
         for (final String[] testCase : testCases) {

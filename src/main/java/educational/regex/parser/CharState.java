@@ -13,6 +13,10 @@ class CharState extends State {
         this.acceptableSet = acceptableSet;
     }
 
+    public CharacterClass getAcceptableSet() {
+        return acceptableSet;
+    }
+
     @Override
     public boolean matches(final char c) {
         return acceptableSet.isAccepted(c);

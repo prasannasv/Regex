@@ -15,6 +15,10 @@ class SingleChar implements CharacterClass {
         return label == c;
     }
 
+    public char getAcceptedChar() {
+        return label;
+    }
+
     @Override
     public String toString() {
         return String.valueOf(label);

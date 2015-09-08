@@ -13,11 +13,14 @@ public class CharacterClasses {
         return new AnyChar();
     }
 
-    public static CharacterClass anyInRange(final char from, final char to) throws InvalidCharacterClassSpecification {
-        if (from > to) {
+    public static CharacterClass anyInRange(final CharacterClass from,
+                                            final CharacterClass to)
+            throws InvalidCharacterClassSpecification {
+        if (!(from instanceof SingleChar && to instanceof SingleChar)) {
             throw new InvalidCharacterClassSpecification();
         }
-        return new Range(from, to);
+
+        return new Range(((SingleChar) from).getAcceptedChar(), ((SingleChar) to).getAcceptedChar());
     }
 
     public static CharacterClass negationOf(final CharacterClass characterClass) {

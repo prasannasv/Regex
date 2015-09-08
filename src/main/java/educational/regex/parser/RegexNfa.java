@@ -2,8 +2,10 @@ package educational.regex.parser;
 
 import educational.regex.ParseException;
 import educational.regex.UnexpectedEscapeChar;
+import educational.regex.UnmatchedClosingBrace;
 import educational.regex.characterclasses.CharacterClass;
 import educational.regex.characterclasses.CharacterClasses;
+import educational.regex.characterclasses.InvalidCharacterClassSpecification;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -22,8 +24,9 @@ class RegexNfa {
     }
 
     private Fragment createNfa(final char[] postfix) throws ParseException {
+        int numCharacterClassOpens = 0;
         for (int i = 0; i < postfix.length; ++i) {
-            final Fragment newFragment;
+            Fragment newFragment = null;
             final char c = postfix[i];
             switch (c) {
                 case '?':
@@ -39,13 +42,30 @@ class RegexNfa {
                     newFragment = handleAlternation();
                     break;
                 case '#':
-                    newFragment = handleConcatenation();
+                    newFragment = numCharacterClassOpens > 0 ? handleUnion() : handleConcatenation();
                     break;
                 case '\\':
                     if (i + 1 == postfix.length) {
                         throw new UnexpectedEscapeChar();
                     }
                     newFragment = handleCharacterClass(CharacterClasses.exactMatchOf(postfix[++i]));
+                    break;
+                case '[':
+                    ++numCharacterClassOpens;
+                    break;
+                case ']':
+                    --numCharacterClassOpens;
+                    if (numCharacterClassOpens < 0) {
+                        throw new UnmatchedClosingBrace();
+                    }
+                    break;
+                case '^':
+                    newFragment = numCharacterClassOpens > 0 ? handleNegation() :
+                            handleCharacterClass(CharacterClasses.exactMatchOf(c));
+                    break;
+                case '-':
+                    newFragment = numCharacterClassOpens > 0 ? handleRange() :
+                            handleCharacterClass(CharacterClasses.exactMatchOf(c));
                     break;
                 case '.':
                     newFragment = handleCharacterClass(CharacterClasses.anyCharMatcher());
@@ -55,7 +75,9 @@ class RegexNfa {
                     break;
             }
 
-            fragmentStack.push(newFragment);
+            if (newFragment != null) {
+                fragmentStack.push(newFragment);
+            }
         }
 
         if (fragmentStack.empty()) {
@@ -185,6 +207,55 @@ class RegexNfa {
 
         final Fragment newFragment = new Fragment(left.start);
         newFragment.addLeaves(right.leaves);
+
+        return newFragment;
+    }
+
+    private Fragment handleUnion() throws ParseException {
+        final Fragment right = fragmentStack.pop();
+        final Fragment left = fragmentStack.pop();
+
+        if (!(left.getStart() instanceof CharState && right.getStart() instanceof CharState)) {
+            throw new InvalidCharacterClassSpecification();
+        }
+        final CharacterClass leftCharClass = ((CharState) left.getStart()).getAcceptableSet();
+        final CharacterClass rightCharClass = ((CharState) right.getStart()).getAcceptableSet();
+
+        final State s = new CharState(++stateId, CharacterClasses.union(leftCharClass, rightCharClass));
+        final Fragment newFragment = new Fragment(s);
+        newFragment.addLeaf(s);
+
+        return newFragment;
+    }
+
+    private Fragment handleNegation() throws ParseException {
+        final Fragment top = fragmentStack.pop();
+        if (!(top.getStart() instanceof CharState)) {
+            throw new InvalidCharacterClassSpecification();
+        }
+
+        final CharacterClass characterClass = ((CharState) top.getStart()).getAcceptableSet();
+
+        final State s = new CharState(++stateId, CharacterClasses.negationOf(characterClass));
+        final Fragment newFragment = new Fragment(s);
+        newFragment.addLeaf(s);
+
+        return newFragment;
+    }
+
+    private Fragment handleRange() throws ParseException {
+        final Fragment right = fragmentStack.pop();
+        final Fragment left = fragmentStack.pop();
+
+        if (!(left.getStart() instanceof CharState && right.getStart() instanceof CharState)) {
+            throw new InvalidCharacterClassSpecification();
+        }
+        final CharacterClass leftCharClass = ((CharState) left.getStart()).getAcceptableSet();
+        final CharacterClass rightCharClass = ((CharState) right.getStart()).getAcceptableSet();
+
+        final State s = new CharState(++stateId, CharacterClasses.anyInRange(leftCharClass, rightCharClass));
+        final Fragment newFragment = new Fragment(s);
+        newFragment.addLeaf(s);
 
         return newFragment;
     }
