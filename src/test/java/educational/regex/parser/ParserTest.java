@@ -101,7 +101,7 @@ public class ParserTest {
                 "abb#+#a#",
         };
         for (final String postfix : postfixes) {
-            final State startState = RegexNfa.postfixToNfa(postfix.toCharArray()).getStart();
+            final State startState = RegexNfa.postfixToNfa(postfix.toCharArray());
             final String serializedStateTransitions = StateSerializer.serialize(startState);
             log.info("Postfix: " + postfix + " to NFA: " + serializedStateTransitions);
         }

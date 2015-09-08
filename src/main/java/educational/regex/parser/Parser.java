@@ -26,8 +26,8 @@ public class Parser {
         log.info("infix: " + regex);
         final char[] postfix = infixToPostfix(regex);
         log.info("postfix: " + new String(postfix));
-        final RegexNfa.Fragment parsedExpression = RegexNfa.postfixToNfa(postfix);
-        return new Matcher(parsedExpression.getStart());
+        final State startingState = RegexNfa.postfixToNfa(postfix);
+        return new Matcher(startingState);
     }
 
     /* package */ static char[] infixToPostfix(final String regex) throws ParseException {
