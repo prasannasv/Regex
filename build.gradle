@@ -23,5 +23,5 @@ tasks.withType(FindBugs) {
     }
 }
 
-test.dependsOn findbugsMain
+findbugsMain.shouldRunAfter test
 
