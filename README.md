@@ -1,12 +1,15 @@
 # Regex
-Simple Regular Expression Matcher
+Simple, Fast Regular Expression Matcher.
 
-This is a very basic regular expression matcher implementation based on https://swtch.com/~rsc/regexp/regexp1.html.
+This is a very basic regular expression matcher, with super-linear time complexity implementation based on https://swtch.com/~rsc/regexp/regexp1.html, completely in Java.
 
 # Scope
 * The metacharacters supported are * + ? ( ) | and \\.
 * The precdence of the operators are (from weakest): |, then the implicit concatenation, then * + ?, and at the top ( ).
-* Sets (like [a-z], \digit, etc.,) and fancy backreferences are not supported.
+* Supports simple character classes like ., [a-zA-Z0-9] and so on.
+* More fancy character sets like \digit, \D, etc., is in the works.
+* Fancy backreferences are not yet supported.
+* See ParserTest.java to get a quick sense of possible patterns that are supported.
 
 # Implementation Notes
 This is a pure Java implementation. The regular expression is first converted to a postfix notation with '#' used to denote an implicit concatenation operation. The postfix notation is then parsed into an Non-deterministic Finite Automata (NFA), a fancy state machine with each state has at most two branches. The given string is then simulated in the state machine. All possible next states are "walked-on" simultaneously. At the end of the input, if any of the states we are on is a final state, then we consider the regex to match the given input.
