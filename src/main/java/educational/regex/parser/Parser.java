@@ -216,11 +216,4 @@ public class Parser {
     private static boolean isMetaCharacter(final char c) {
         return isUnaryOperator(c) || isSequenceDelimiter(c) || isBinaryOperator(c) || c == '\\' || c == '#';
     }
-
-    private static void popConcatOperIfPresent(final StringBuilder postfixBuilder,
-                                               final Stack<Character> operatorStack) {
-        if (!operatorStack.empty() && operatorStack.peek() == '#') {
-            postfixBuilder.append(operatorStack.pop());
-        }
-    }
 }

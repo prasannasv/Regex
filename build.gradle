@@ -1,6 +1,7 @@
-apply plugin: 'java'
-apply plugin: 'idea'
-apply plugin: 'findbugs'
+apply plugin: "java"
+apply plugin: "idea"
+apply plugin: "findbugs"
+apply plugin: "jacoco"
 
 repositories {
     mavenCentral()
@@ -14,6 +15,27 @@ test {
     testLogging {
         events "passed", "skipped", "failed", "standardOut", "standardError"
     }
+    jacoco {
+        destinationFile = file("$buildDir/reports/jacoco/test.exec")
+        classDumpFile = file("$buildDir/build/classes/test")
+    }
+}
+
+def jacocoReportPath = "$buildDir/reports/jacoco/test"
+jacocoTestReport {
+    group = "Reporting"
+    description = "Generate Jacoco coverage reports after running tests."
+    reports {
+        xml.enabled false
+        csv.enabled false
+        html {
+            enabled true
+            destination "${jacocoReportPath}/html"
+        }
+    }
+    doLast {
+        println "Coverage report generated: file:///${jacocoReportPath}/html/index.html"
+    }
 }
 
 tasks.withType(FindBugs) {
@@ -24,4 +46,4 @@ tasks.withType(FindBugs) {
 }
 
 findbugsMain.shouldRunAfter test
-
+test.finalizedBy jacocoTestReport
